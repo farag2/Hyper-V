@@ -30,7 +30,7 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 	else
 	{
 		Write-Host "`nType name for a VM"
-		Write-Host "list command displays VM names list" -NoNewline
+		Write-Host "`"list`" command displays VM names list" -NoNewline
 	}
 	$VMName = Read-Host -Prompt " "
 	IF ($VMName -eq "list")
@@ -55,14 +55,14 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 		$VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 		IF ($RU)
 		{
-			Write-Host "`nВМ `"$VMName`" существует."
+			Write-Host "`nВМ `"$VMName`" уже существует."
 			Write-Host "Удалить ВМ `"$VMName`" и папку ВМ $VirtualHardDiskPath\$VMName`?"
 			Write-Host "Введите `"yes`", чтобы удалить" -ForegroundColor Yellow
 			Write-Host "`nЧтобы пропустить, нажмите Enter" -NoNewline
 		}
 		else
 		{
-			Write-Host "`nVM `"$VMName`" exists."
+			Write-Host "`nVM `"$VMName`" already exists."
 			Write-Host "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
 			Write-Host "Type `"yes`" to delete" -ForegroundColor Yellow
 			Write-Host "`nPress Enter to skip" -NoNewline
@@ -116,16 +116,23 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 	$OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
 	$OpenFileDialog.InitialDirectory = "D:\"
 	$OpenFileDialog.Multiselect = $false
-	$OpenFileDialog.Filter = "ISO-файлы (*.iso)|*.iso|Все файлы (*.*)|*.*"
+	IF ($RU)
+	{
+		$OpenFileDialog.Filter = "ISO файлы (*.iso)|*.iso|Все файлы (*.*)|*.*"
+	}
+	else
+	{
+		$OpenFileDialog.Filter = "ISO Files (*.iso)|*.iso|All Files (*.*)|*.*"
+	}
 	$OpenFileDialog.ShowHelp = $true
 	$OpenFileDialog.ShowDialog()
 	Add-VMDvdDrive -VMName $VMName -Path $OpenFileDialog.FileName
-	# Get "Guest Service Interface" localized name
-	# Получить имя "Интерфейс гостевой службы"
+	# Get localized name of "Guest Service Interface"
+	# Получить имя локализованное имя "Интерфейса гостевой службы"
 	$guestServiceId = "Microsoft:{0}\6C09BB55-D683-4DA0-8931-C9BF705F6480" -f (Get-VM -VMName $VMName).Id
 	$Name = (Get-VMIntegrationService -VMName $VMName | Where-Object -FilterScript {$_.Id -eq $guestServiceId}).Name
-	# Enable Guest Service Interface for VM
-	# Включить "Гостевые службы" для ВМ
+	# Enable "Guest Service Interface" for VM
+	# Включить "Интерфейс гостевой службы" для ВМ
 	Get-VM -VMName $VMName | Enable-VMIntegrationService -Name $Name
 	# Set the amount of RAM for VM half as much as installed
 	# Установить объем оперативной памяти для ВМ вдвое меньше, чем установлено
@@ -161,7 +168,7 @@ vmconnect.exe $env:COMPUTERNAME $VMName
 Start-Sleep -Seconds 5
 Start-VM -VMName $VMName
 # Emulate space key sending to initialize OS installing
-# Нажать виртуальный пробел, чтобы инициализировать установку
+# Эмулировать нажатие виртуального пробела, чтобы инициализировать установку
 Start-Sleep -Seconds 2
 [System.Windows.Forms.SendKeys]::SendWait(" ")
 
