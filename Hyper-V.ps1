@@ -7,9 +7,9 @@ IF ((Get-Culture).Name -eq "ru-RU")
 }
 # Enable Hyper-V
 # Включить Hyper-V
-IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -ne $true)
+IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $false)
 {
-	Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -NoRestart
+	Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online -NoRestart
 	IF ($RU)
 	{
 		Write-Host "`nПерезагрузите ПК"
@@ -20,7 +20,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -ne $tru
 	}
 	break
 }
-IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).State -eq "Enabled")
+IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $true)
 {
 	IF ($RU)
 	{
@@ -50,9 +50,9 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 		(Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
 		break
 	}
-	IF (Get-VM -VMName $VMName -ErrorAction SilentlyContinue)
+	$VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
+	IF ((Get-VM -VMName $VMName -ErrorAction SilentlyContinue) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 	{
-		$VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 		IF ($RU)
 		{
 			Write-Host "`nВМ `"$VMName`" уже существует."
@@ -70,16 +70,16 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 		$command = Read-Host -Prompt " "
 		IF ($command -eq "yes")
 		{
-			Get-VM -VMName $VMName | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
-			Remove-VM -VMName $VMName -Force
-			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force
+			Get-VM -VMName $VMName -ErrorAction SilentlyContinue | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
+			Remove-VM -VMName $VMName -Force -ErrorAction SilentlyContinue
+			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction SilentlyContinue
 		}
 		elseif ([string]::IsNullOrEmpty($command))
 		{
 			break
 		}
 		else
-		{	
+		{
 			Write-Host "`nInvalid command" -ForegroundColor Yellow
 			break
 		}
@@ -107,14 +107,17 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 	# Create a 30 GB virtual hard drive
 	# Создать виртуальный жесткий диск размером 30 ГБ
 	New-VHD -Dynamic -SizeBytes 30GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
-	# Add a hard disk drive to a virtual machine 
+	# Add a hard disk drive to a virtual machine
 	# Присоединить виртуальный жесткий диск к виртуальной машине
 	Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 	# Add .iso image
 	# Добавить .iso образ ОС
 	Add-Type -AssemblyName System.Windows.Forms
 	$OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
-	$OpenFileDialog.InitialDirectory = "D:\"
+	# Downloads folder
+	# Папка "Загрузки"
+	$DownloadsFolder = Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{374DE290-123F-4565-9164-39C4925E467B}"
+	$OpenFileDialog.InitialDirectory = $DownloadsFolder
 	$OpenFileDialog.Multiselect = $false
 	IF ($RU)
 	{
@@ -128,7 +131,7 @@ IF ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).Stat
 	$OpenFileDialog.ShowDialog()
 	Add-VMDvdDrive -VMName $VMName -Path $OpenFileDialog.FileName
 	# Get localized name of "Guest Service Interface"
-	# Получить имя локализованное имя "Интерфейса гостевой службы"
+	# Получить локализованное имя "Интерфейса гостевой службы"
 	$guestServiceId = "Microsoft:{0}\6C09BB55-D683-4DA0-8931-C9BF705F6480" -f (Get-VM -VMName $VMName).Id
 	$Name = (Get-VMIntegrationService -VMName $VMName | Where-Object -FilterScript {$_.Id -eq $guestServiceId}).Name
 	# Enable "Guest Service Interface" for VM
@@ -167,11 +170,40 @@ vmconnect.exe $env:COMPUTERNAME $VMName
 # Запустить ВМ
 Start-Sleep -Seconds 5
 Start-VM -VMName $VMName
+# Show vmconnect.exe window to send space key
+# Вывести на передний план окно vmconnect.exe, чтобы послать нажатие виртуального пробела
+$Win32ShowWindowAsync = @{
+	Namespace = "Win32Functions"
+	Name = "Win32ShowWindowAsync"
+	Language = "CSharp"
+	MemberDefinition = @"
+		[DllImport("user32.dll")]
+		public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool SetForegroundWindow(IntPtr hWnd);
+"@
+}
+IF (-not ("Win32Functions.Win32ShowWindowAsync" -as [type]))
+{
+	Add-Type @Win32ShowWindowAsync
+}
+$title = "*$VMName*$env:COMPUTERNAME*"
+Get-Process | ForEach-Object -Process {
+	IF (($_.ProcessName -eq "vmconnect") -and ($_.MainWindowTitle -like $title))
+	{
+		# Show window, if minimized
+		# Развернуть окно, если свернуто
+		[Win32Functions.Win32ShowWindowAsync]::ShowWindowAsync($_.MainWindowHandle, 10) | Out-Null
+		# Move focus to the window
+		# Перевести фокус на окно
+		[Win32Functions.Win32ShowWindowAsync]::SetForegroundWindow($_.MainWindowHandle) | Out-Null
+	}
+}
 # Emulate space key sending to initialize OS installing
 # Эмулировать нажатие виртуального пробела, чтобы инициализировать установку
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
 [System.Windows.Forms.SendKeys]::SendWait(" ")
-
 # Edit session settings
 # Изменить настройки сессии
 # vmconnect.exe $env:COMPUTERNAME $VMName /edit
