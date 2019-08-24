@@ -24,32 +24,34 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 {
 	IF ($RU)
 	{
-		Write-Host "`nВведите имя для ВМ"
-		Write-Host "Команда `"list`" выводит список имеющихся ВМ" -NoNewline
+		Write-Host "`nИмеющиеся ВМ"
 	}
 	else
 	{
-		Write-Host "`nType name for a VM"
-		Write-Host "`"list`" command displays VM names list" -NoNewline
+		Write-Host "`nAvailable VMs"
+	}
+	$Name = @{
+	Name = "VM Name"
+	Expression = {$_.Name}
+	}
+	$Path = @{
+		Name = "Path"
+		Expression = {$_.Path}
+	}
+	$State = @{
+		Name = "VM State"
+		Expression = {$_.State}
+	}
+	(Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
+	IF ($RU)
+	{
+		Write-Host "`nВведите имя для ВМ" -NoNewline
+	}
+	else
+	{
+		Write-Host "`nType name for a VM" -NoNewline
 	}
 	$VMName = Read-Host -Prompt " "
-	IF ($VMName -eq "list")
-	{
-		$Name = @{
-			Name = "VM Name"
-			Expression = {$_.Name}
-		}
-		$Path = @{
-			Name = "Path"
-			Expression = {$_.Path}
-		}
-		$State = @{
-			Name = "VM State"
-			Expression = {$_.State}
-		}
-		(Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
-		break
-	}
 	$VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 	IF ((Get-VM -VMName $VMName -ErrorAction SilentlyContinue) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 	{
@@ -141,10 +143,10 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 	# Установить объем оперативной памяти для ВМ вдвое меньше, чем установлено
 	$ram = ((Get-CimInstance -ClassName CIM_PhysicalMemory).Capacity | Measure-Object -Sum).Sum
 	Set-VMMemory -VMName $VMName -StartupBytes $($ram/2)
-	# Set the amount of RAM for VM half as much as installed
 	# Set the number of virtual processors for VM to $env:NUMBER_OF_PROCESSORS
+	# Установить число виртуальных прцоессоров на $env:NUMBER_OF_PROCESSORS
 	Set-VMProcessor -VMName $VMName -Count $env:NUMBER_OF_PROCESSORS
-	# Create virtual switch
+	# Create external virtual switch
 	# Создать внешний виртуальный коммутатор
 	IF ((Get-VMSwitch -SwitchType External).NetAdapterInterfaceDescription -ne (Get-NetAdapter -Physical).InterfaceDescription)
 	{
@@ -153,7 +155,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 	# Set virtual switch for VM
 	# Установить виртуальный коммутатор для ВМ
 	Get-VM -VMName $VMName | Get-VMNetworkAdapter | Connect-VMNetworkAdapter -SwitchName (Get-VMSwitch -SwitchType External).Name
-	# Do not use automatic checkpoints
+	# Do not use automatic checkpoints for VM
 	# Не использовать автоматические контрольные точки для ВМ
 	Set-VM -VMName $VMName -AutomaticCheckpointsEnabled $false
 	# Set the initial VM boot from DVD drive
@@ -204,6 +206,7 @@ Get-Process | ForEach-Object -Process {
 # Эмулировать нажатие виртуального пробела, чтобы инициализировать установку
 Start-Sleep -Seconds 1
 [System.Windows.Forms.SendKeys]::SendWait(" ")
+
 # Edit session settings
 # Изменить настройки сессии
 # vmconnect.exe $env:COMPUTERNAME $VMName /edit
