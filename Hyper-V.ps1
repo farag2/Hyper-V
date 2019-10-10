@@ -177,13 +177,14 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 				# Move focus to the window
 				# Перевести фокус на окно
 				[Win32Functions.Win32ShowWindowAsync]::SetForegroundWindow($_.MainWindowHandle) | Out-Null
+                # Emulate Enter key sending 10 times to initialize OS installing
+			    # Эмулировать нажатие Enter 10 раз, чтобы инициализировать установку
+			    Start-Sleep -Seconds 1
+			    [System.Windows.Forms.SendKeys]::SendWait("{Enter 10}")
 			}
 		}
-		# Emulate Enter key sending 10 times to initialize OS installing
-		# Эмулировать нажатие Enter 10 раз, чтобы инициализировать установку
-		Start-Sleep -Seconds 1
-		[System.Windows.Forms.SendKeys]::SendWait("{Enter 10}")
 	}
+
 }
 # Edit session settings
 # Изменить настройки сессии
