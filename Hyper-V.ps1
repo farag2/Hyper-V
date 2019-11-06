@@ -1,4 +1,6 @@
 Clear-Host
+
+#region Begin
 # Enable Hyper-V
 # Включить Hyper-V
 IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $false)
@@ -7,6 +9,9 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $fal
 	Write-Output "Restart the PC"
 	break
 }
+#endregion Begin
+
+#region Main
 IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $true)
 {
 	Write-Output "Available VMs"
@@ -76,7 +81,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 	# Присоединить виртуальный жесткий диск к виртуальной машине
 	Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 	# Add .iso image
-	# Добавить .iso образ ОС
+	# Добавить .iso образ
 	Add-Type -AssemblyName System.Windows.Forms
 	$OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
 	# Downloads folder
@@ -85,14 +90,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 	$OpenFileDialog.InitialDirectory = $DownloadsFolder
 	$OpenFileDialog.Multiselect = $false
 	$OpenFileDialog.ShowHelp = $false
-	IF ($RU)
-	{
-		$OpenFileDialog.Filter = "ISO файлы (*.iso)|*.iso|Все файлы (*.*)|*.*"
-	}
-	else
-	{
-		$OpenFileDialog.Filter = "ISO Files (*.iso)|*.iso|All Files (*.*)|*.*"
-	}
+	$OpenFileDialog.Filter = "ISO Files (*.iso)|*.iso|All Files (*.*)|*.*"
 	# Focus on open file dialog
 	# Перевести фокус на диалог открытия файла
 	$tmp = New-Object -TypeName System.Windows.Forms.Form
@@ -136,9 +134,32 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		# Do not use automatic checkpoints for VM
 		# Не использовать автоматические контрольные точки для ВМ
 		Set-VM -VMName $VMName -AutomaticCheckpointsEnabled $false
+		# Verifying .iso image
+		# Проверка .iso-образа
+		Write-Host "Are you using original Microsoft .iso image?"
+		Write-Host "[Y]es " -ForegroundColor Yellow -NoNewline
+		Write-Host "or " -NoNewline
+		Write-Host "[N]o" -ForegroundColor Yellow -NoNewline
+		$command = Read-Host -Prompt " "
+		IF ($command -eq "Y")
+		{
+			# Original .iso
+			Set-VMFirmware -VMName $VMName -EnableSecureBoot On
+		}
+		elseif ($command -eq "N")
+		{
+			# Custom compiled .iso
+			Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
+		}
 		# Set the initial VM boot from DVD drive
 		# Установить первоначальную загрузку ВМ с DVD-дисковода
 		Set-VMFirmware -VMName $VMName -FirstBootDevice $(Get-VMDvdDrive -VMName $VMName)
+		# Set boot order: Dvd Drive, Hard Disk, Network Adapter
+		# Установить порядок загрузки: Dvd Drive, Hard Disk, Network Adapter
+		$VMDvdDrive = Get-VMDvdDrive -VMName 10
+		$VMHardDiskDrive = Get-VMHardDiskDrive -VMName 10 
+		$VMNetworkAdapter = Get-VMNetworkAdapter -VMName 10
+		Set-VMFirmware -VMName 10 -BootOrder $VMDvdDrive, $VMHardDiskDrive, $VMNetworkAdapter
 		# Enable nested virtualization for VM
 		# Разрешить вложенную виртуализацию
 		Set-VMProcessor -VMName $VMName -ExposeVirtualizationExtensions $true
@@ -177,14 +198,15 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 				# Move focus to the window
 				# Перевести фокус на окно
 				[Win32Functions.Win32ShowWindowAsync]::SetForegroundWindow($_.MainWindowHandle) | Out-Null
-				# Emulate Enter key sending 10 times to initialize OS installing
-				# Эмулировать нажатие Enter 10 раз, чтобы инициализировать установку
+				# Emulate Enter key sending 100 times to initialize OS installing
+				# Эмулировать нажатие Enter 100 раз, чтобы инициализировать установку
 				Start-Sleep -Milliseconds 500
 				[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 			}
 		}
 	}
 }
+#endregion Main
 
 # Edit session settings
 # Изменить настройки сессии
