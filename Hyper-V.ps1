@@ -14,10 +14,11 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $fal
 #region Main
 IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $true)
 {
+	#region VMName
 	Write-Output "Available VMs"
 	$Name = @{
-	Name = "VM Name"
-	Expression = {$_.Name}
+		Name = "VM Name"
+		Expression = {$_.Name}
 	}
 	$Path = @{
 		Name = "Path"
@@ -54,6 +55,9 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 			break
 		}
 	}
+	#endregion VMName
+
+	#region Settings
 	# Set default location for virtual hard disk to "$env:SystemDrive\HV"
 	# Установить папку по умолчанию для виртуальных жестких дисков на "$env:SystemDrive\HV"
 	$VirtualHardDiskPath = "$env:SystemDrive\HV"
@@ -205,6 +209,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 			}
 		}
 	}
+	#endregion VMName
 }
 #endregion Main
 
