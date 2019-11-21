@@ -160,10 +160,10 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		Set-VMFirmware -VMName $VMName -FirstBootDevice $(Get-VMDvdDrive -VMName $VMName)
 		# Set boot order: Dvd Drive, Hard Disk, Network Adapter
 		# Установить порядок загрузки: Dvd Drive, Hard Disk, Network Adapter
-		$VMDvdDrive = Get-VMDvdDrive -VMName 10
-		$VMHardDiskDrive = Get-VMHardDiskDrive -VMName 10 
-		$VMNetworkAdapter = Get-VMNetworkAdapter -VMName 10
-		Set-VMFirmware -VMName 10 -BootOrder $VMDvdDrive, $VMHardDiskDrive, $VMNetworkAdapter
+		$VMDvdDrive = Get-VMDvdDrive -VMName $VMName
+		$VMHardDiskDrive = Get-VMHardDiskDrive -VMName $VMName 
+		$VMNetworkAdapter = Get-VMNetworkAdapter -VMName $VMName
+		Set-VMFirmware -VMName $VMName -BootOrder $VMDvdDrive, $VMHardDiskDrive, $VMNetworkAdapter
 		# Enable nested virtualization for VM
 		# Разрешить вложенную виртуализацию
 		Set-VMProcessor -VMName $VMName -ExposeVirtualizationExtensions $true
