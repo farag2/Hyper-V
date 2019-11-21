@@ -174,11 +174,13 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		# Запустить ВМ
 		Start-Sleep -Seconds 5
 		Start-VM -VMName $VMName
+		
+		#region Window
 		# Show vmconnect.exe window to send space key
 		# Вывести на передний план окно vmconnect.exe, чтобы послать нажатие виртуального пробела
 		$Win32ShowWindowAsync = @{
-			Namespace = "Win32Functions"
-			Name = "Win32ShowWindowAsync"
+			Namespace = "Functions"
+			Name = "ShowSet"
 			Language = "CSharp"
 			MemberDefinition = @"
 				[DllImport("user32.dll")]
@@ -188,7 +190,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 				public static extern bool SetForegroundWindow(IntPtr hWnd);
 "@
 		}
-		IF (-not ("Win32Functions.Win32ShowWindowAsync" -as [type]))
+		IF (-not ("Functions.ShowSet" -as [type]))
 		{
 			Add-Type @Win32ShowWindowAsync
 		}
@@ -198,16 +200,19 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 			{
 				# Show window, if minimized
 				# Развернуть окно, если свернуто
-				[Win32Functions.Win32ShowWindowAsync]::ShowWindowAsync($_.MainWindowHandle, 10) | Out-Null
+				[Functions.ShowSet]::ShowWindowAsync($_.MainWindowHandle, 10)
+				Start-Sleep -Milliseconds 500
 				# Move focus to the window
 				# Перевести фокус на окно
-				[Win32Functions.Win32ShowWindowAsync]::SetForegroundWindow($_.MainWindowHandle) | Out-Null
+				[Functions.ShowSet]::SetForegroundWindow($_.MainWindowHandle)
 				# Emulate Enter key sending 100 times to initialize OS installing
 				# Эмулировать нажатие Enter 100 раз, чтобы инициализировать установку
 				Start-Sleep -Milliseconds 500
 				[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 			}
 		}
+		#endregion Window
+
 	}
 	#endregion VMName
 }
