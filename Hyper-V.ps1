@@ -36,23 +36,30 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 	{
 		Write-Output "`nVM `"$VMName`" already exists."
 		Write-Output "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
-		Write-Host "Type `"yes`" to delete" -ForegroundColor Yellow
+		$yes = '"{0}"' -f "yes"
+		Write-Host "Type $yes to delete" -ForegroundColor Yellow
 		Write-Host "`nPress Enter to skip" -NoNewline
 		$command = Read-Host -Prompt " "
-		IF ($command -eq "yes")
-		{
-			Get-VM -VMName $VMName -ErrorAction SilentlyContinue | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
-			Remove-VM -VMName $VMName -Force -ErrorAction SilentlyContinue
-			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction SilentlyContinue
-		}
-		elseif ([string]::IsNullOrEmpty($command))
+		if ([string]::IsNullOrEmpty($command))
 		{
 			break
 		}
 		else
 		{
-			Write-Host "Invalid command" -ForegroundColor Yellow
-			break
+			switch ($command)
+			{
+				"yes"
+				{
+					Get-VM -VMName $VMName -ErrorAction SilentlyContinue | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
+					Remove-VM -VMName $VMName -Force -ErrorAction SilentlyContinue
+					Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction SilentlyContinue
+				}
+				Default
+				{
+					Write-Host "Invalid command" -ForegroundColor Yellow
+					break
+				}
+			}
 		}
 	}
 	#endregion VMName
@@ -145,15 +152,25 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		Write-Host "or " -NoNewline
 		Write-Host "[N]o" -ForegroundColor Yellow -NoNewline
 		$command = Read-Host -Prompt " "
-		IF ($command -eq "Y")
+		if ([string]::IsNullOrEmpty($command))
 		{
-			# Original .iso
-			Set-VMFirmware -VMName $VMName -EnableSecureBoot On
+			break
 		}
-		elseif ($command -eq "N")
+		else
 		{
-			# Custom compiled .iso
-			Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
+			switch ($command)
+			{
+				"Y"
+				{
+					# Original .iso
+					Set-VMFirmware -VMName $VMName -EnableSecureBoot On
+				}
+				"N"
+				{
+					# Custom compiled .iso
+					Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
+				}
+			}
 		}
 		# Set the initial VM boot from DVD drive
 		# Установить первоначальную загрузку ВМ с DVD-дисковода
@@ -161,7 +178,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		# Set boot order: Dvd Drive, Hard Disk, Network Adapter
 		# Установить порядок загрузки: Dvd Drive, Hard Disk, Network Adapter
 		$VMDvdDrive = Get-VMDvdDrive -VMName $VMName
-		$VMHardDiskDrive = Get-VMHardDiskDrive -VMName $VMName 
+		$VMHardDiskDrive = Get-VMHardDiskDrive -VMName $VMName
 		$VMNetworkAdapter = Get-VMNetworkAdapter -VMName $VMName
 		Set-VMFirmware -VMName $VMName -BootOrder $VMDvdDrive, $VMHardDiskDrive, $VMNetworkAdapter
 		# Enable nested virtualization for VM
@@ -174,7 +191,7 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 		# Запустить ВМ
 		Start-Sleep -Seconds 5
 		Start-VM -VMName $VMName
-		
+
 		#region Window
 		# Show vmconnect.exe window to send space key
 		# Вывести на передний план окно vmconnect.exe, чтобы послать нажатие виртуального пробела
@@ -201,13 +218,13 @@ IF ((Get-CimInstance –ClassName CIM_ComputerSystem).HypervisorPresent -eq $tru
 				# Show window, if minimized
 				# Развернуть окно, если свернуто
 				[Functions.ShowSet]::ShowWindowAsync($_.MainWindowHandle, 10)
-				Start-Sleep -Milliseconds 500
+				Start-Sleep -Milliseconds 100
 				# Move focus to the window
 				# Перевести фокус на окно
 				[Functions.ShowSet]::SetForegroundWindow($_.MainWindowHandle)
 				# Emulate Enter key sending 100 times to initialize OS installing
 				# Эмулировать нажатие Enter 100 раз, чтобы инициализировать установку
-				Start-Sleep -Milliseconds 500
+				Start-Sleep -Milliseconds 100
 				[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 			}
 		}
