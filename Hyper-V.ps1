@@ -1,4 +1,4 @@
-Clear-Host
+﻿Clear-Host
 
 #region Begin
 # Enable Hyper-V
