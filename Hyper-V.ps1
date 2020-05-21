@@ -1,4 +1,4 @@
-Clear-Host
+﻿Clear-Host
 
 #region Begin
 # Enable Hyper-V
@@ -28,8 +28,7 @@ $State = @{
 }
 (Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
 
-Write-Host "`nType name for a VM" -NoNewline
-$VMName = Read-Host -Prompt " "
+$VMName = Read-Host -Prompt "`nType name for a VM"
 
 $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 
@@ -38,10 +37,8 @@ if ((Get-VM -VMName $VMName -ErrorAction SilentlyContinue) -or (Test-Path -Path 
 	Write-Output "`nVM `"$VMName`" already exists."
 	Write-Output "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
 	$yes = '"{0}"' -f "yes"
-	Write-Host "Type $yes to delete" -ForegroundColor Yellow
-	Write-Host "`nPress Enter to skip" -NoNewline
-
-	$command = Read-Host -Prompt " "
+	Write-Output "`nPress Enter to skip"
+	$command = Read-Host -Prompt "Type $yes to delete"
 	if ([string]::IsNullOrEmpty($command))
 	{
 		break
@@ -58,7 +55,7 @@ if ((Get-VM -VMName $VMName -ErrorAction SilentlyContinue) -or (Test-Path -Path 
 			}
 			Default
 			{
-				Write-Host "Invalid command" -ForegroundColor Yellow
+				Write-Warning -Message "Invalid command"
 				return
 			}
 		}
