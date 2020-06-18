@@ -1,3 +1,5 @@
+[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q51QUJC)
+
 ## Overview
 
 Install OS in a Virtual Machine using Hyper-V much easier than ever
