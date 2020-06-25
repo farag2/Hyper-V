@@ -13,4 +13,4 @@ Install OS in a Virtual Machine using Hyper-V much easier than ever
 
 ## Screenshot
 
- ![Screenshot](https://github.com/farag2/Hyper-V/blob/master/Screenshots/Hyper-V.png)
+ ![Screenshot](https://i.imgur.com/eU530Zx.png)
