@@ -32,32 +32,27 @@ $VMName = Read-Host -Prompt "`nType name for a VM"
 
 $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 
-if ((Get-VM -VMName $VMName -ErrorAction SilentlyContinue) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
+if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 {
-	Write-Output "`nVM `"$VMName`" already exists."
-	Write-Output "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
-	$yes = '"{0}"' -f "yes"
-	Write-Output "`nPress Enter to skip"
-	$command = Read-Host -Prompt "Type $yes to delete"
-	if ([string]::IsNullOrEmpty($command))
+	Write-Verbose "VM `"$VMName`" already exists" -Verbose
+	$Title = ""
+	$Message = "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
+	$Options = "&Yes", "&Skip"
+	$DefaultChoice = 1
+	$Result = $Host.UI.PromptForChoice($Title, $Message, $Options, $DefaultChoice)
+
+	switch ($Result)
 	{
-		break
-	}
-	else
-	{
-		switch ($command)
+		"0"
 		{
-			"yes"
-			{
-				Get-VM -VMName $VMName -ErrorAction SilentlyContinue | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
-				Remove-VM -VMName $VMName -Force -ErrorAction SilentlyContinue
-				Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction SilentlyContinue
-			}
-			Default
-			{
-				Write-Warning -Message "Invalid command"
-				return
-			}
+			Get-VM -VMName $VMName | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
+			Remove-VM -VMName $VMName -Force
+			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force
+		}
+		Default
+		{
+			Write-Verbose "Skipped" -Verbose
+			return
 		}
 	}
 }
@@ -99,11 +94,13 @@ Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualH
 # Добавить .iso образ
 Add-Type -AssemblyName System.Windows.Forms
 $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+
 # Downloads folder
 # Папка "Загрузки"
 $DownloadsFolder = Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{374DE290-123F-4565-9164-39C4925E467B}"
 $OpenFileDialog.InitialDirectory = $DownloadsFolder
 $OpenFileDialog.Filter = "ISO Files (*.iso)|*.iso|All Files (*.*)|*.*"
+
 # Focus on open file dialog
 # Перевести фокус на диалог открытия файла
 $tmp = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}
@@ -150,7 +147,7 @@ if ($OpenFileDialog.FileName)
 
 	# Verifying .iso image
 	# Проверка .iso-образа
-	$Title = "Graphics performance preference"
+	$Title = ""
 	$Message = "Original Microsoft .iso image?"
 	$Options = "&Yes", "&No"
 	$DefaultChoice = 1
@@ -212,7 +209,8 @@ if ($OpenFileDialog.FileName)
 	{
 		Add-Type @SetForegroundWindow
 	}
-	$title = "*$VMName*$env:COMPUTERNAME*"
+
+	$Title = "*$VMName*$env:COMPUTERNAME*"
 	Get-Process | ForEach-Object -Process {
 		if (($_.ProcessName -eq "vmconnect") -and ($_.MainWindowTitle -like $title))
 		{
