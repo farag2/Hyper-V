@@ -4,12 +4,15 @@ Clear-Host
 if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
 {
 	Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online -NoRestart
+
 	Write-Warning -Message "Restart the PC"
+
 	break
 }
 
 #region VMName
 Write-Output "Available VMs"
+
 $Name = @{
 	Name = "VM Name"
 	Expression = {$_.Name}
@@ -31,6 +34,7 @@ $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 {
 	Write-Verbose "VM `"$VMName`" already exists" -Verbose
+
 	$Title = ""
 	$Message = "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
 	$Options = "&Yes", "&Skip"
@@ -48,6 +52,7 @@ if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHa
 		Default
 		{
 			Write-Verbose "Skipped" -Verbose
+
 			return
 		}
 	}
@@ -56,7 +61,6 @@ if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHa
 
 #region Settings
 # Set default location for virtual hard disk to "$env:SystemDrive\HV"
-# Установить папку по умолчанию для виртуальных жестких дисков на "$env:SystemDrive\HV"
 $VirtualHardDiskPath = "$env:SystemDrive\HV"
 if (-not (Test-Path $VirtualHardDiskPath))
 {
@@ -98,7 +102,6 @@ if ($OpenFileDialog.FileName)
 	Add-VMDvdDrive -VMName $VMName -Path $OpenFileDialog.FileName
 
 	# Get localized name of "Guest Service Interface"
-	# Получить локализованное имя "Интерфейса гостевой службы"
 	$guestServiceId = "Microsoft:{0}\6C09BB55-D683-4DA0-8931-C9BF705F6480" -f (Get-VM -VMName $VMName).Id
 	$Name = (Get-VMIntegrationService -VMName $VMName | Where-Object -FilterScript {$_.Id -eq $guestServiceId}).Name
 
