@@ -191,13 +191,15 @@ if ($OpenFileDialog.FileName)
 		{
 			# Show window, if minimized
 			[WinAPI.ForegroundWindow]::ShowWindowAsync($_.MainWindowHandle, 10)
+
 			Start-Sleep -Milliseconds 100
 
-			# Move focus to the window
+			# Force move the console window to the foreground
 			[WinAPI.ForegroundWindow]::SetForegroundWindow($_.MainWindowHandle)
 
-			# Emulate Enter key sending 100 times to initialize OS installing
 			Start-Sleep -Milliseconds 100
+
+			# Emulate the Enter key sending 100 times to initialize OS installing
 			[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 		}
 	}
