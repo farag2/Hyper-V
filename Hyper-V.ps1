@@ -185,32 +185,26 @@ if ($OpenFileDialog.FileName)
 		Add-Type @SetForegroundWindow
 	}
 
-	$Title = "*$VMName*$env:COMPUTERNAME*"
-	Get-Process | ForEach-Object -Process {
-		if (($_.ProcessName -eq "vmconnect") -and ($_.MainWindowTitle -like $title))
-		{
-			# Show window, if minimized
-			[WinAPI.ForegroundWindow]::ShowWindowAsync($_.MainWindowHandle, 10)
+	Get-Process | Where-Object -FilterScript {($_.ProcessName -eq "vmconnect") -and ($_.MainWindowTitle -like "*$VMName*$env:COMPUTERNAME*")} | ForEach-Object -Process {
+		# Show window, if minimized
+		[WinAPI.ForegroundWindow]::ShowWindowAsync($_.MainWindowHandle, 10)
 
-			Start-Sleep -Milliseconds 100
+		Start-Sleep -Seconds 1
 
-			# Force move the console window to the foreground
-			[WinAPI.ForegroundWindow]::SetForegroundWindow($_.MainWindowHandle)
+		# Force move the console window to the foreground
+		[WinAPI.ForegroundWindow]::SetForegroundWindow($_.MainWindowHandle)
 
-			Start-Sleep -Milliseconds 100
+		Start-Sleep -Seconds 1
 
-			# Emulate the Enter key sending 100 times to initialize OS installing
-			[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
-		}
+		# Emulate the Enter key sending 100 times to initialize OS installing
+		[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 	}
 	#endregion Window
 }
 #endregion VMName
 
 # Edit session settings
-# Изменить настройки сессии
 # vmconnect.exe $env:COMPUTERNAME $VMName /edit
 
 # Expand HDD space to 40 GB after OS installed
-# Расширить объем ж/д до 40 ГБ после установки ОС
 # (Get-VM -VMName $VMName).HardDrives | Select-Object -First 1 | Resize-VHD -SizeBytes 40gb -Passthru
