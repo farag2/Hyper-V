@@ -1,3 +1,5 @@
+#Requires -RunAsAdministrator
+
 Clear-Host
 
 # Check whether Hyper-V is enabled
@@ -80,6 +82,11 @@ if ((Get-VMHost).VirtualMachinePath -ne $VirtualHardDiskPath)
 # Create a gen 2 VM
 New-VM -VMName $VMName -Path $VirtualHardDiskPath\$VMName -Generation 2
 
+# Enable vTPM
+$RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian) -AllowUntrustedRoot).RawData
+Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
+Enable-VMTPM -VMName $VMName
+
 # Create a 30 GB virtual hard drive
 New-VHD -Dynamic -SizeBytes 30GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 
@@ -88,7 +95,7 @@ Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualH
 
 # Add an .iso image
 Add-Type -AssemblyName System.Windows.Forms
-$OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+$OpenFileDialog = New-Object -ComObject System.Windows.Forms.OpenFileDialog
 $DownloadsFolder = Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{374DE290-123F-4565-9164-39C4925E467B}"
 $OpenFileDialog.InitialDirectory = $DownloadsFolder
 $OpenFileDialog.Filter = "ISO Files (*.iso)|*.iso|All Files (*.*)|*.*"
