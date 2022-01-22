@@ -87,8 +87,8 @@ $RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian)
 Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
 Enable-VMTPM -VMName $VMName
 
-# Create a 30 GB virtual hard drive
-New-VHD -Dynamic -SizeBytes 30GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
+# Create a 60 GB virtual hard drive
+New-VHD -Dynamic -SizeBytes 60GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 
 # Add a hard disk drive to a virtual machine
 Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
@@ -213,5 +213,5 @@ if ($OpenFileDialog.FileName)
 # Edit session settings
 # vmconnect.exe $env:COMPUTERNAME $VMName /edit
 
-# Expand HDD space to 40 GB after OS installed
-# (Get-VM -VMName $VMName).HardDrives | Select-Object -First 1 | Resize-VHD -SizeBytes 40gb -Passthru
+# Expand HDD space to XX0 GB after OS installed
+# (Get-VM -VMName $VMName).HardDrives | Select-Object -First 1 | Resize-VHD -SizeBytes XXgb -Passthru
