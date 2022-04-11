@@ -88,7 +88,7 @@ Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
 Enable-VMTPM -VMName $VMName
 
 # Create a 60 GB virtual hard drive
-New-VHD -Dynamic -SizeBytes 60GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
+New-VHD -Dynamic -SizeBytes 40GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 
 # Add a hard disk drive to a virtual machine
 Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
@@ -116,8 +116,8 @@ if ($OpenFileDialog.FileName)
 	Get-VM -VMName $VMName | Enable-VMIntegrationService -Name $Name
 
 	# Set the amount of RAM for VM half as much as installed
-	$ram = ((Get-CimInstance -ClassName CIM_PhysicalMemory).Capacity | Measure-Object -Sum).Sum
-	Set-VMMemory -VMName $VMName -StartupBytes $($ram/2)
+	$RAM = ((Get-CimInstance -ClassName CIM_PhysicalMemory).Capacity | Measure-Object -Sum).Sum
+	Set-VMMemory -VMName $VMName -StartupBytes $($RAM/4)
 
 	# Set the number of virtual processors for VM to $env:NUMBER_OF_PROCESSORS
 	Set-VMProcessor -VMName $VMName -Count $env:NUMBER_OF_PROCESSORS
