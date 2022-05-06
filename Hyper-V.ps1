@@ -5,7 +5,17 @@ Clear-Host
 # Check whether Hyper-V is enabled
 if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
 {
-	Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online -NoRestart
+	Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online -NoRestartRunAsAdministrator
+
+
+
+Clear-Host
+
+
+
+# Check whether Hyper-V is enabled
+
+if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
 
 	Write-Warning -Message "Restart the PC"
 
@@ -87,7 +97,7 @@ $RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian)
 Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
 Enable-VMTPM -VMName $VMName
 
-# Create a 60 GB virtual hard drive
+# Create a 40 GB virtual hard drive
 New-VHD -Dynamic -SizeBytes 40GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 
 # Add a hard disk drive to a virtual machine
@@ -120,7 +130,7 @@ if ($OpenFileDialog.FileName)
 	Set-VMMemory -VMName $VMName -StartupBytes $($RAM/4)
 
 	# Set the number of virtual processors for VM to $env:NUMBER_OF_PROCESSORS
-	Set-VMProcessor -VMName $VMName -Count $env:NUMBER_OF_PROCESSORS
+	Set-VMProcessor -VMName $VMName -Count $($env:NUMBER_OF_PROCESSORS/4)
 
 	# Create external virtual switch
 	if ((Get-VMSwitch -SwitchType External).NetAdapterInterfaceDescription -ne (Get-NetAdapter -Physical).InterfaceDescription)
