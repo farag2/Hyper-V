@@ -5,7 +5,7 @@ Clear-Host
 # Check whether Hyper-V is enabled
 
 if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
-
+{
 	Write-Warning -Message "Restart the PC"
 
 	break
