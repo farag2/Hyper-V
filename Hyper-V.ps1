@@ -3,17 +3,6 @@
 Clear-Host
 
 # Check whether Hyper-V is enabled
-if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
-{
-	Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online -NoRestartRunAsAdministrator
-
-
-
-Clear-Host
-
-
-
-# Check whether Hyper-V is enabled
 
 if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
 
