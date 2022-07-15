@@ -124,7 +124,11 @@ if ($OpenFileDialog.FileName)
 	# Create external virtual switch
 	if ((Get-VMSwitch -SwitchType External).NetAdapterInterfaceDescription -ne (Get-NetAdapter -Physical).InterfaceDescription)
 	{
-		New-VMSwitch -Name "Virtual switch" -NetAdapterName (Get-NetAdapter -Physical).Name -AllowManagementOS $true
+		if ((Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}).InterfaceDescription -ne(Get-VMSwitch -Name "Virtual switch").NetAdapterInterfaceDescription)
+		{
+			$WiredInterface = Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}
+			New-VMSwitch -Name "Virtual switch" -NetAdapterName $WiredInterface.Name -AllowManagementOS $true
+		}
 	}
 
 	# Set virtual switch for VM
