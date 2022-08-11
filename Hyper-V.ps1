@@ -124,7 +124,7 @@ if ($OpenFileDialog.FileName)
 	# Create external virtual switch
 	if ((Get-VMSwitch -SwitchType External).NetAdapterInterfaceDescription -ne (Get-NetAdapter -Physical).InterfaceDescription)
 	{
-		if ((Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}).InterfaceDescription -ne(Get-VMSwitch -Name "Virtual switch").NetAdapterInterfaceDescription)
+		if ((Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}).InterfaceDescription -ne (Get-VMSwitch -Name "Virtual switch").NetAdapterInterfaceDescription)
 		{
 			$WiredInterface = Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}
 			New-VMSwitch -Name "Virtual switch" -NetAdapterName $WiredInterface.Name -AllowManagementOS $true
@@ -218,3 +218,4 @@ if ($OpenFileDialog.FileName)
 
 # Expand HDD space to XX0 GB after OS installed
 # (Get-VM -VMName $VMName).HardDrives | Select-Object -First 1 | Resize-VHD -SizeBytes XXgb -Passthru
+ 
