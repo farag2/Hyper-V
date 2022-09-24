@@ -1,3 +1,4 @@
+cls
 #Requires -RunAsAdministrator
 
 Clear-Host
@@ -121,14 +122,11 @@ if ($OpenFileDialog.FileName)
 	# Set the number of virtual processors for VM to $env:NUMBER_OF_PROCESSORS
 	Set-VMProcessor -VMName $VMName -Count $($env:NUMBER_OF_PROCESSORS/4)
 
-	# Create external virtual switch
-	if ((Get-VMSwitch -SwitchType External).NetAdapterInterfaceDescription -ne (Get-NetAdapter -Physical).InterfaceDescription)
+	# Create an external virtual switch
+	if (-not (Get-VMSwitch -SwitchType External -Name "Virtual switch" -ErrorAction Ignore))
 	{
-		if ((Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}).InterfaceDescription -ne (Get-VMSwitch -Name "Virtual switch").NetAdapterInterfaceDescription)
-		{
-			$WiredInterface = Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}
-			New-VMSwitch -Name "Virtual switch" -NetAdapterName $WiredInterface.Name -AllowManagementOS $true
-		}
+		$WiredInterface = Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}
+		New-VMSwitch -Name "Virtual switch" -NetAdapterName $WiredInterface.Name -AllowManagementOS $true
 	}
 
 	# Set virtual switch for VM
