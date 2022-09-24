@@ -1,4 +1,3 @@
-cls
 #Requires -RunAsAdministrator
 
 Clear-Host
