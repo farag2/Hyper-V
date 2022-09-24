@@ -3,7 +3,6 @@
 Clear-Host
 
 # Check whether Hyper-V is enabled
-
 if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State -eq "Disabled")
 {
 	Write-Warning -Message "Restart the PC"
@@ -157,7 +156,7 @@ if ($OpenFileDialog.FileName)
 	# Set the initial VM boot from DVD drive
 	Set-VMFirmware -VMName $VMName -FirstBootDevice $(Get-VMDvdDrive -VMName $VMName)
 
-	# Set boot order: Dvd Drive, Hard Disk, Network Adapter
+	# Set boot order: DVD Drive, Hard Disk, Network Adapter
 	$VMDvdDrive = Get-VMDvdDrive -VMName $VMName
 	$VMHardDiskDrive = Get-VMHardDiskDrive -VMName $VMName
 	$VMNetworkAdapter = Get-VMNetworkAdapter -VMName $VMName
