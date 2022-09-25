@@ -45,9 +45,9 @@ if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHa
 	{
 		"0"
 		{
-			Get-VM -VMName $VMName | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
-			Remove-VM -VMName $VMName -Force
-			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force
+			Get-VM -VMName $VMName -ErrorAction Ignore | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
+			Remove-VM -VMName $VMName -Force -ErrorAction Ignore
+			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction Ignore
 		}
 		Default
 		{
