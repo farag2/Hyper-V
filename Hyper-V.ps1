@@ -212,6 +212,5 @@ if ($OpenFileDialog.FileName)
 # Edit session settings
 # vmconnect.exe $env:COMPUTERNAME $VMName /edit
 
-# Expand HDD space to XX0 GB after OS installed
+# Expand HDD space to XX GB after OS installed
 # (Get-VM -VMName $VMName).HardDrives | Select-Object -First 1 | Resize-VHD -SizeBytes XXgb -Passthru
- 
