@@ -86,7 +86,7 @@ Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
 Enable-VMTPM -VMName $VMName
 
 # Create a 40 GB virtual hard drive
-New-VHD -Dynamic -SizeBytes 40GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
+New-VHD -Dynamic -SizeBytes 52GB -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
 
 # Add a hard disk drive to a virtual machine
 Add-VMHardDiskDrive -VMName $VMName -Path "$VirtualHardDiskPath\$VMName\VirtualHardDisk\$VMName.vhdx"
