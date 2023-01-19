@@ -81,15 +81,12 @@ if ((Get-VMHost).VirtualMachinePath -ne $VirtualHardDiskPath)
 New-VM -VMName $VMName -Path $VirtualHardDiskPath\$VMName -Generation 2
 
 # Enable vTPM
-try
+if (-not (Get-HgsGuardian -Name UntrustedGuardian -ErrorAction Ignore))
 {
-    $RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian -ErrorAction Stop) -AllowUntrustedRoot).RawData 
+    # Creating new UntrustedGuardian since it did not exist
+    New-HgsGuardian -Name UntrustedGuardian -GenerateCertificates
 }
-catch [Microsoft.PowerShell.Cmdletization.Cim.CimJobException]
-{
-    Write-Warning -Message "Enable TPM (fTPM) module in UEFI" -Verbose
-    exit
-}
+$RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian -ErrorAction Stop) -AllowUntrustedRoot).RawData 
 Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
 Enable-VMTPM -VMName $VMName
 
