@@ -31,31 +31,107 @@ $VMName = Read-Host -Prompt "`nType name for a VM"
 
 $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 
+#region Show-Menu
+function script:Show-Menu
+{
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory = $true)]
+		[array]
+		$Menu,
+
+		[Parameter(Mandatory = $true)]
+		[int]
+		$Default
+	)
+
+	Write-Information -MessageData "" -InformationAction Continue
+
+	# Add "Please use the arrow keys 🠕 and 🠗 on your keyboard to select your answer" to menu
+	$Menu += "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
+
+	# https://github.com/microsoft/terminal/issues/14992
+	[System.Console]::BufferHeight += $Menu.Count
+	$minY = [Console]::CursorTop
+	$y = [Math]::Max([Math]::Min($Default, $Menu.Count), 0)
+	do
+	{
+		[Console]::CursorTop = $minY
+		[Console]::CursorLeft = 0
+		$i = 0
+		foreach ($item in $Menu)
+		{
+			if ($i -ne $y)
+			{
+				Write-Information -MessageData ('  {1}  ' -f ($i+1), $item) -InformationAction Continue
+			}
+			else
+			{
+				Write-Information -MessageData ('[ {1} ]' -f ($i+1), $item) -InformationAction Continue
+			}
+			$i++
+		}
+		$k = [Console]::ReadKey()
+		switch ($k.Key)
+		{
+			"UpArrow"
+			{
+				if ($y -gt 0)
+				{
+					$y--
+				}
+			}
+			"DownArrow"
+			{
+				if ($y -lt ($Menu.Count - 1))
+				{
+					$y++
+				}
+			}
+			"Enter"
+			{
+				return $Menu[$y]
+			}
+		}
+	}
+	while ($k.Key -notin ([ConsoleKey]::Escape, [ConsoleKey]::Enter))
+}
+#endregion Show-Menu
+
 if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 {
 	Write-Verbose "VM `"$VMName`" already exists" -Verbose
 
-	$Title = ""
-	$Message = "Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?"
-	$Options = "&Yes", "&Skip"
-	$DefaultChoice = 1
-	$Result = $Host.UI.PromptForChoice($Title, $Message, $Options, $DefaultChoice)
+	Write-Information -MessageData "" -InformationAction Continue
+	Write-Verbose -Message ("Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?") -Verbose
 
-	switch ($Result)
+	$Script:KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
+	$Script:Yes = "Yes"
+	$Script:Skip = "Skip"
+
+	do
 	{
-		"0"
-		{
-			Get-VM -VMName $VMName -ErrorAction Ignore | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
-			Remove-VM -VMName $VMName -Force -ErrorAction Ignore
-			Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction Ignore
-		}
-		Default
-		{
-			Write-Verbose "Skipped" -Verbose
+		$Choice = Show-Menu -Menu @($Yes, $Skip) -Default 2
 
-			return
+		switch ($Choice)
+		{
+			$Yes
+			{
+				Get-VM -VMName $VMName -ErrorAction Ignore | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
+				Remove-VM -VMName $VMName -Force -ErrorAction Ignore
+				Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction Ignore
+			}
+			$Skip
+			{
+				Write-Verbose "Skipped" -Verbose
+
+				return
+			}
+			$KeyboardArrows {}
 		}
 	}
+	until ($Choice -ne $KeyboardArrows)
 }
 #endregion VMName
 
@@ -139,24 +215,33 @@ if ($OpenFileDialog.FileName)
 	Set-VM -VMName $VMName -AutomaticCheckpointsEnabled $false
 
 	# Verifying .iso image
-	$Title = ""
-	$Message = "Original Microsoft .iso image?"
-	$Options = "&Yes", "&No"
-	$DefaultChoice = 1
-	$Result = $Host.UI.PromptForChoice($Title, $Message, $Options, $DefaultChoice)
-	switch ($Result)
+	Write-Information -MessageData "" -InformationAction Continue
+	Write-Verbose -Message ("Original Microsoft .iso image?") -Verbose
+
+	$Script:KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
+	$Script:Yes = "Yes"
+	$Script:No = "No"
+
+	do
 	{
-		"0"
+		$Choice = Show-Menu -Menu @($Yes, $No) -Default 2
+
+		switch ($Choice)
 		{
-			# Original .iso
-			Set-VMFirmware -VMName $VMName -EnableSecureBoot On
-		}
-		"1"
-		{
-			# Custom compiled .iso
-			Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
+			$Yes
+			{
+				# Original .iso
+				Set-VMFirmware -VMName $VMName -EnableSecureBoot On
+			}
+			$No
+			{
+				# Custom compiled .iso
+				Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
+			}
+			$KeyboardArrows {}
 		}
 	}
+	until ($Choice -ne $KeyboardArrows)
 
 	# Set the initial VM boot from DVD drive
 	Set-VMFirmware -VMName $VMName -FirstBootDevice $(Get-VMDvdDrive -VMName $VMName)
