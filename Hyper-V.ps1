@@ -48,7 +48,7 @@ function script:Show-Menu
 
 	Write-Information -MessageData "" -InformationAction Continue
 
-	# Add "Please use the arrow keys 🠕 and 🠗 on your keyboard to select your answer" to menu
+	# Add "Please use the arrow keys 🠕 and ↓ on your keyboard to select your answer" to menu
 	$Menu += "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
 
 	# https://github.com/microsoft/terminal/issues/14992
