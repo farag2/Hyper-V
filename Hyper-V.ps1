@@ -11,18 +11,18 @@ if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).Stat
 }
 
 #region VMName
-Write-Output "Available VMs"
+Write-Output -InputObject "Available VMs"
 
 $Name = @{
-	Name = "VM Name"
+	Name       = "VM Name"
 	Expression = {$_.Name}
 }
 $Path = @{
-	Name = "Path"
+	Name       = "Path"
 	Expression = {$_.Path}
 }
 $State = @{
-	Name = "VM State"
+	Name       = "VM State"
 	Expression = {$_.State}
 }
 (Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
@@ -32,7 +32,7 @@ $VMName = Read-Host -Prompt "`nType name for a VM"
 $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 
 #region Show-Menu
-function script:Show-Menu
+function Show-Menu
 {
 	[CmdletBinding()]
 	param
@@ -51,51 +51,51 @@ function script:Show-Menu
 	# Add "Please use the arrow keys 🠕 and ↓ on your keyboard to select your answer" to menu
 	$Menu += "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
 
-	# https://github.com/microsoft/terminal/issues/14992
-	[System.Console]::BufferHeight += $Menu.Count
-	$minY = [Console]::CursorTop
-	$y = [Math]::Max([Math]::Min($Default, $Menu.Count), 0)
+	$i = 0
+	while ($i -lt $Menu.Count)
+	{
+		$i++
+		Write-Host -Object ""
+	}
+
+	$SelectedValueIndex = [Math]::Max([Math]::Min($Default, $Menu.Count), 0)
+
 	do
 	{
-		[Console]::CursorTop = $minY
-		[Console]::CursorLeft = 0
-		$i = 0
-		foreach ($item in $Menu)
+		[Console]::SetCursorPosition(0, [Console]::CursorTop - $Menu.Count)
+
+		for ($i = 0; $i -lt $Menu.Count; $i++)
 		{
-			if ($i -ne $y)
+			if ($i -eq $SelectedValueIndex)
 			{
-				Write-Information -MessageData ('  {1}  ' -f ($i+1), $item) -InformationAction Continue
+				Write-Host -Object "[>] $($Menu[$i])" -NoNewline
 			}
 			else
 			{
-				Write-Information -MessageData ('[ {1} ]' -f ($i+1), $item) -InformationAction Continue
+				Write-Host -Object "[ ] $($Menu[$i])" -NoNewline
 			}
-			$i++
+
+			Write-Host -Object ""
 		}
-		$k = [Console]::ReadKey()
-		switch ($k.Key)
+
+		$Key = [Console]::ReadKey()
+		switch ($Key.Key)
 		{
 			"UpArrow"
 			{
-				if ($y -gt 0)
-				{
-					$y--
-				}
+				$SelectedValueIndex = [Math]::Max(0, $SelectedValueIndex - 1)
 			}
 			"DownArrow"
 			{
-				if ($y -lt ($Menu.Count - 1))
-				{
-					$y++
-				}
+				$SelectedValueIndex = [Math]::Min($Menu.Count - 1, $SelectedValueIndex + 1)
 			}
 			"Enter"
 			{
-				return $Menu[$y]
+				return $Menu[$SelectedValueIndex]
 			}
 		}
 	}
-	while ($k.Key -notin ([ConsoleKey]::Escape, [ConsoleKey]::Enter))
+	while ($Key.Key -notin ([ConsoleKey]::Escape, [ConsoleKey]::Enter))
 }
 #endregion Show-Menu
 
@@ -106,23 +106,20 @@ if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHa
 	Write-Information -MessageData "" -InformationAction Continue
 	Write-Verbose -Message ("Delete VM `"$VMName`" and VM folder $VirtualHardDiskPath\$VMName`?") -Verbose
 
-	$Script:KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
-	$Script:Yes = "Yes"
-	$Script:Skip = "Skip"
-
+	$KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
 	do
 	{
-		$Choice = Show-Menu -Menu @($Yes, $Skip) -Default 2
+		$Choice = Show-Menu -Menu @("Yes", "Skip") -Default 2
 
 		switch ($Choice)
 		{
-			$Yes
+			"Yes"
 			{
 				Get-VM -VMName $VMName -ErrorAction Ignore | Where-Object -FilterScript {$_.State -eq "Running"} | Stop-VM -Force
 				Remove-VM -VMName $VMName -Force -ErrorAction Ignore
 				Remove-Item -Path "$VirtualHardDiskPath\$VMName" -Recurse -Force -ErrorAction Ignore
 			}
-			$Skip
+			"Skip"
 			{
 				Write-Verbose "Skipped" -Verbose
 
@@ -159,8 +156,8 @@ New-VM -VMName $VMName -Path $VirtualHardDiskPath\$VMName -Generation 2
 # Enable vTPM
 if (-not (Get-HgsGuardian -Name UntrustedGuardian -ErrorAction Ignore))
 {
-    # Creating new UntrustedGuardian since it did not exist
-    New-HgsGuardian -Name UntrustedGuardian -GenerateCertificates
+	# Creating new UntrustedGuardian since it did not exist
+	New-HgsGuardian -Name UntrustedGuardian -GenerateCertificates
 }
 $RawData = (New-HgsKeyProtector -Owner (Get-HgsGuardian -Name UntrustedGuardian -ErrorAction Stop) -AllowUntrustedRoot).RawData 
 Set-VMKeyProtector -VMName $VMName -KeyProtector $RawData
@@ -216,24 +213,21 @@ if ($OpenFileDialog.FileName)
 
 	# Verifying .iso image
 	Write-Information -MessageData "" -InformationAction Continue
-	Write-Verbose -Message ("Original Microsoft .iso image?") -Verbose
+	Write-Verbose -Message "Original Microsoft .iso image?" -Verbose
 
-	$Script:KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
-	$Script:Yes = "Yes"
-	$Script:No = "No"
-
+	$KeyboardArrows = "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
 	do
 	{
-		$Choice = Show-Menu -Menu @($Yes, $No) -Default 2
+		$Choice = Show-Menu -Menu @("Yes", "No") -Default 2
 
 		switch ($Choice)
 		{
-			$Yes
+			"Yes"
 			{
 				# Original .iso
 				Set-VMFirmware -VMName $VMName -EnableSecureBoot On
 			}
-			$No
+			"No"
 			{
 				# Custom compiled .iso
 				Set-VMFirmware -VMName $VMName -EnableSecureBoot Off
