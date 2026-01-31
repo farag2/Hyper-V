@@ -10,8 +10,7 @@ if ((Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).Stat
 	break
 }
 
-#region VMName
-Write-Output -InputObject "Available VMs"
+Write-Verbose -Message "Available VMs" -Verbose
 
 $Name = @{
 	Name       = "VM Name"
@@ -27,12 +26,33 @@ $State = @{
 }
 (Get-VM | Select-Object -Property $Name, $Path, $State | Format-Table | Out-String).Trim()
 
-$VMName = Read-Host -Prompt "`nType name for a VM"
+Write-Information -MessageData "" -InformationAction Continue
+$VMName = Read-Host -Prompt "Type name for a VM"
 
 $VirtualHardDiskPath = (Get-VMHost).VirtualHardDiskPath
 
 #region Show-Menu
-function Show-Menu
+<#
+	.SYNOPSIS
+	"Show menu" function with the up/down arrow keys and enter key to make a selection
+
+	.PARAMETER Menu
+	Array of items to choose from
+
+	.PARAMETER Default
+	Default selected item in array
+
+	.PARAMETER AddSkip
+	Add localized extracted "Skip" string from shell32.dll
+
+	.EXAMPLE
+	Show-Menu -Menu @($Item1, $Item2) -Default 1
+
+	.LINK
+	https://qna.habr.com/answer?answer_id=1522379
+	https://github.com/ryandunton/InteractivePSMenu
+#>
+function Global:Show-Menu
 {
 	[CmdletBinding()]
 	param
@@ -43,12 +63,16 @@ function Show-Menu
 
 		[Parameter(Mandatory = $true)]
 		[int]
-		$Default
+		$Default,
+
+		[Parameter(Mandatory = $false)]
+		[switch]
+		$AddSkip
 	)
 
 	Write-Information -MessageData "" -InformationAction Continue
 
-	# Add "Please use the arrow keys 🠕 and ↓ on your keyboard to select your answer" to menu
+	# Add "Please use the arrow keys 🠕 and 🠗 on your keyboard to select your answer" to menu
 	$Menu += "Please use the arrow keys {0} and {1} on your keyboard to select your answer" -f [System.Char]::ConvertFromUtf32(0x2191), [System.Char]::ConvertFromUtf32(0x2193)
 
 	$i = 0
@@ -101,6 +125,7 @@ function Show-Menu
 
 if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHardDiskPath\$VMName))
 {
+	Write-Information -MessageData "" -InformationAction Continue
 	Write-Verbose "VM `"$VMName`" already exists" -Verbose
 
 	Write-Information -MessageData "" -InformationAction Continue
@@ -130,7 +155,6 @@ if ((Get-VM -VMName $VMName -ErrorAction Ignore) -or (Test-Path -Path $VirtualHa
 	}
 	until ($Choice -ne $KeyboardArrows)
 }
-#endregion VMName
 
 #region Settings
 # Set default location for virtual hard disk to "$env:SystemDrive\HV"
@@ -249,6 +273,10 @@ if ($OpenFileDialog.FileName)
 	# Enable nested virtualization for VM
 	Set-VMProcessor -VMName $VMName -ExposeVirtualizationExtensions $true
 
+	Write-Information -MessageData "" -InformationAction Continue
+	Write-Verbose "Launching created VM. VM window will be set to the foreground automatically." -Verbose
+	pause
+
 	# Connect to VM
 	vmconnect.exe $env:COMPUTERNAME $VMName
 
@@ -256,7 +284,6 @@ if ($OpenFileDialog.FileName)
 	Start-Sleep -Seconds 5
 	Start-VM -VMName $VMName
 
-	#region Window
 	# Set vmconnect.exe window to the foreground to send space key
 	$SetForegroundWindow = @{
 		Namespace = "WinAPI"
@@ -289,8 +316,8 @@ if ($OpenFileDialog.FileName)
 		# Emulate the Enter key sending 100 times to initialize OS installing
 		[System.Windows.Forms.SendKeys]::SendWait("{Enter 100}")
 	}
-	#endregion Window
 }
+#endregion Settings
 #endregion VMName
 
 # Edit session settings
