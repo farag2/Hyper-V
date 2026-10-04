@@ -222,16 +222,8 @@ if ($OpenFileDialog.FileName)
 	# Set the number of virtual processors for VM to $env:NUMBER_OF_PROCESSORS
 	Set-VMProcessor -VMName $VMName -Count $($env:NUMBER_OF_PROCESSORS/4)
 
-	<# Create an external virtual switch
-	if (-not (Get-VMSwitch -SwitchType External -Name "Virtual switch" -ErrorAction Ignore))
-	{
-		$WiredInterface = Get-NetAdapter -Physical | Where-Object {$_.PhysicalMediaType -eq "802.3"}
-		New-VMSwitch -Name "Virtual switch" -NetAdapterName $WiredInterface.Name -AllowManagementOS $true
-	}
-	#>
-
 	# Set virtual switch for VM
-	Get-VM -VMName $VMName | Get-VMNetworkAdapter | Connect-VMNetworkAdapter -SwitchName (Get-VMSwitch -SwitchType External).Name
+	Get-VM -VMName $VMName | Get-VMNetworkAdapter | Connect-VMNetworkAdapter -SwitchName (Get-VMSwitch -Id c08cb7b8-9b3c-408e-8e30-5e16a3aeb444).Name
 
 	# Do not use automatic checkpoints for VM
 	Set-VM -VMName $VMName -AutomaticCheckpointsEnabled $false
